@@ -1,0 +1,14 @@
+{
+  "extension_name": {
+    "message": "Saidi CSS"
+  },
+  "extension_description": {
+    "message": "Lisa saidipõhiselt oma CSS"
+  },
+  "css_placeholder": {
+    "message": "/* sinu CSS siia */"
+  },
+  "invalid_pattern": {
+    "message": "Metamärgid on lubatud ainult kujul *.host või tee/*"
+  }
+}

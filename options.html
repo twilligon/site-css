@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="color-scheme" content="light dark">
+    <title>Site CSS</title>
+    <style>
+      body, #overrides, #overrides > div {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5em;
+      }
+
+      body {
+        margin: 1em auto;
+        max-width: 50em;
+      }
+
+      #add, header {
+        display: flex;
+        gap: 0.5em;
+      }
+
+      header span, #pattern {
+        flex: 1;
+      }
+
+      textarea {
+        min-height: 12em;
+        box-sizing: border-box;
+        font-family: monospace;
+        resize: vertical;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="overrides"></div>
+    <form id="add">
+      <input id="pattern" placeholder="*.example.com" required>
+      <button>+</button>
+    </form>
+    <script src="keys.js"></script>
+    <script src="options.js"></script>
+  </body>
+</html>

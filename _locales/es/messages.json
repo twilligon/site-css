@@ -1,0 +1,14 @@
+{
+  "extension_name": {
+    "message": "CSS del sitio"
+  },
+  "extension_description": {
+    "message": "Inyecta tu propio CSS en cada sitio"
+  },
+  "css_placeholder": {
+    "message": "/* tu CSS aquí */"
+  },
+  "invalid_pattern": {
+    "message": "Los comodines solo se permiten como *.host o ruta/*"
+  }
+}

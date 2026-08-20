@@ -3,12 +3,12 @@
     "message": "CSS du site"
   },
   "extension_description": {
-    "message": "Injecter votre propre CSS site par site"
+    "message": "Injecter du CSS site par site"
   },
   "css_placeholder": {
     "message": "/* votre CSS ici */"
   },
   "invalid_pattern": {
-    "message": "Les jokers ne sont autorisés que sous la forme *.host ou chemin/*"
+    "message": "URLPattern non valide"
   }
 }

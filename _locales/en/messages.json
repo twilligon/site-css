@@ -3,12 +3,12 @@
     "message": "Site CSS"
   },
   "extension_description": {
-    "message": "Inject your own CSS on a per-site basis"
+    "message": "Inject CSS on a per-site basis"
   },
   "css_placeholder": {
     "message": "/* your CSS here */"
   },
   "invalid_pattern": {
-    "message": "Wildcards are only allowed as *.host or path/*"
+    "message": "Not a valid URLPattern"
   }
 }

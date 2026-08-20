@@ -3,6 +3,6 @@
     "message": "/* your CSS here, innit */"
   },
   "invalid_pattern": {
-    "message": "Wildcards are only allowed as *.host or path/*, innit"
+    "message": "Not a valid URLPattern, innit"
   }
 }

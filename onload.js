@@ -1,24 +1,56 @@
-const style = document.createElement("style");
-const candidates = keys(location);
+function* hosts() {
+  const labels = location.hostname.split(".");
 
-function apply() {
-  return chrome.storage.sync.get(candidates).then(saved => {
-    style.textContent = candidates
-      .filter(candidate => candidate in saved)
-      .reverse()
-      .flatMap(key => unpack(key, saved[key])
-        .filter(([pattern]) => pattern == key || parse(pattern).test(location.href))
-        .map(([, css]) => css))
-      .join("\n\n");
+  yield "*";
 
-    if (!style.isConnected) {
-      (document.head ?? document.documentElement).append(style);
-    }
-  });
+  for (let i = labels.length - 1; i > 0; i--) {
+    yield `*.${labels.slice(i).join(".")}`;
+  }
+
+  yield location.hostname;
+}
+
+function* paths() {
+  const segments = location.pathname.split("/");
+
+  yield "";
+
+  for (let i = 1; i < segments.length; i++) {
+    yield `${segments.slice(0, i).join("/")}/*`;
+  }
+
+  yield location.pathname;
+}
+
+const keys = [];
+
+for (const host of hosts()) {
+  for (const path of paths()) {
+    keys.push(host + path);
+  }
+}
+
+let oldCss = [];
+
+async function apply() {
+  const saved = await chrome.storage.sync.get(keys);
+  const newCss = keys.flatMap(key => (saved[key] ?? [])
+    .filter(([name]) => name === key || new URLPattern(name).test(location.href))
+    .map(([, css]) => css));
+
+  let same = 0;
+  while (same < oldCss.length && same < newCss.length && oldCss[same] === newCss[same]) {
+    same++;
+  }
+
+  if (same < oldCss.length || same < newCss.length) {
+    chrome.runtime.sendMessage({ oldCss: oldCss.slice(same), newCss: newCss.slice(same) });
+    oldCss = newCss;
+  }
 }
 
 chrome.storage.sync.onChanged.addListener(changes => {
-  if (candidates.some(candidate => candidate in changes)) {
+  if (keys.some(key => key in changes)) {
     apply();
   }
 });

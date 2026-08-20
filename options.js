@@ -1,95 +1,102 @@
 const overrides = document.getElementById("overrides");
 const pattern = document.getElementById("pattern");
 
-function valid(text) {
-  if (!text || text.startsWith("/") || /[:{}()+?\\]/.test(text)) {
-    return false;
+function shortToURLPatternText(text) {
+  return /^[^/]*:\/\//.test(text) ? text : `*://${text.replace(/^[^/]*/, "$&:*")}`;
+}
+
+function shortToURLPattern(text) {
+  return new URLPattern(shortToURLPatternText(text));
+}
+
+function hostnameToKey(hostname) {
+  return hostname.replace(/^.*[*:{}()+?\\][^.]*/, "*");
+}
+
+function pathnameToKey(pathname) {
+  const path = pathname.replace(/\/[^/]*[*:{}()+?\\].*$/, "/*");
+
+  return path.startsWith("/") ? path : "";
+}
+
+function URLPatternToKey(urlPattern) {
+  return hostnameToKey(urlPattern.hostname) + pathnameToKey(urlPattern.pathname);
+}
+
+function equalQua(prototype, a, b) {
+  return Object.keys(prototype).every(property => a[property] === b[property]);
+}
+
+function entryNames(value) {
+  return value?.map(([name]) => name).join("\n") ?? "";
+}
+
+async function mutate(key, fn) {
+  const saved = await chrome.storage.sync.get(key);
+  const list = fn(saved[key] ?? []);
+
+  if (list.length === 0) {
+    chrome.storage.sync.remove(key);
+  } else {
+    chrome.storage.sync.set({ [key]: list });
   }
-
-  try {
-    parse(text);
-  } catch {
-    return false;
-  }
-
-  return true;
 }
 
-function patterns(key, value) {
-  return value === undefined ? "" : unpack(key, value).map(([name]) => name).join("\n");
-}
+async function render() {
+  const saved = await chrome.storage.sync.get(null);
+  const rows = Object.entries(saved)
+    .flatMap(([key, value]) => value.map(([name, css]) => [key, name, css]))
+    .sort(([, a], [, b]) => a.localeCompare(b));
 
-function update(key, name, css) {
-  return chrome.storage.sync.get(key).then(saved => {
-    const list = unpack(key, saved[key] ?? "").map(entry => entry[0] == name ? [name, css] : entry);
-    return chrome.storage.sync.set({ [key]: pack(key, list) });
-  });
-}
+  overrides.replaceChildren(...rows.map(([key, name, css]) => {
+    const row = document.createElement("div");
+    const head = document.createElement("header");
+    const editor = document.createElement("textarea");
+    const remove = document.createElement("button");
 
-function drop(key, name) {
-  return chrome.storage.sync.get(key).then(saved => {
-    const list = unpack(key, saved[key] ?? "").filter(entry => entry[0] != name);
+    remove.textContent = "×";
+    remove.addEventListener("click", () => mutate(key, list => list.filter(item => item[0] !== name)));
 
-    return list.length
-      ? chrome.storage.sync.set({ [key]: pack(key, list) })
-      : chrome.storage.sync.remove(key);
-  });
-}
+    editor.value = css;
+    editor.spellcheck = false;
+    editor.placeholder = chrome.i18n.getMessage("css_placeholder");
+    editor.addEventListener("input", () =>
+      mutate(key, list => list.map(item => item[0] === name ? [name, editor.value] : item)));
 
-function render() {
-  chrome.storage.sync.get(null).then(saved => {
-    const rows = Object.keys(saved)
-      .flatMap(key => unpack(key, saved[key]).map(([name, css]) => [key, name, css]))
-      .sort(([, a], [, b]) => a < b ? -1 : a > b ? 1 : 0);
-
-    overrides.replaceChildren(...rows.map(([key, name, css]) => {
-      const row = document.createElement("div");
-      const head = document.createElement("header");
-      const label = document.createElement("span");
-      const editor = document.createElement("textarea");
-      const remove = document.createElement("button");
-
-      label.textContent = name;
-      remove.textContent = "×";
-      remove.addEventListener("click", () => drop(key, name));
-
-      editor.value = css;
-      editor.spellcheck = false;
-      editor.placeholder = chrome.i18n.getMessage("css_placeholder");
-      editor.addEventListener("input", () => update(key, name, editor.value));
-
-      head.append(label, remove);
-      row.append(head, editor);
-      return row;
-    }));
-  });
+    head.append(name === key ? key : name, remove);
+    row.append(head, editor);
+    return row;
+  }));
 }
 
 document.title = chrome.i18n.getMessage("extension_name");
 
 pattern.addEventListener("input", () => {
-  pattern.setCustomValidity(valid(pattern.value) ? "" : chrome.i18n.getMessage("invalid_pattern"));
+  try {
+    shortToURLPattern(pattern.value);
+    pattern.setCustomValidity("");
+  } catch {
+    pattern.setCustomValidity(chrome.i18n.getMessage("invalid_pattern"));
+  }
 });
 
 document.getElementById("add").addEventListener("submit", event => {
-  const name = pattern.value;
-  const key = envelope(name);
-
   event.preventDefault();
+
+  const patternText = shortToURLPatternText(pattern.value);
+
   pattern.value = "";
 
-  chrome.storage.sync.get(key).then(saved => {
-    const list = key in saved ? unpack(key, saved[key]) : [];
+  const parsed = new URLPattern(patternText);
+  const key = URLPatternToKey(parsed);
+  const keyPattern = shortToURLPattern(key);
+  const name = equalQua(URLPattern.prototype, parsed, keyPattern) ? key : patternText;
 
-    if (!list.some(entry => entry[0] == name)) {
-      chrome.storage.sync.set({ [key]: pack(key, [...list, [name, ""]]) });
-    }
-  });
+  mutate(key, list => list.some(item => item[0] === name) ? list : [...list, [name, ""]]);
 });
 
 chrome.storage.sync.onChanged.addListener(changes => {
-  if (Object.entries(changes).some(([key, change]) =>
-      patterns(key, change.oldValue) != patterns(key, change.newValue))) {
+  if (Object.values(changes).some(change => entryNames(change.oldValue) !== entryNames(change.newValue))) {
     render();
   }
 });

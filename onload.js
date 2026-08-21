@@ -33,7 +33,7 @@ for (const host of hosts()) {
 let oldCss = [];
 
 async function apply() {
-  const saved = await chrome.storage.sync.get(keys);
+  const saved = await browser.storage.sync.get(keys);
   const newCss = keys.flatMap(key => (saved[key] ?? [])
     .filter(([name]) => name === key || new URLPattern(name).test(location.href))
     .map(([, css]) => css));
@@ -44,12 +44,12 @@ async function apply() {
   }
 
   if (same < oldCss.length || same < newCss.length) {
-    chrome.runtime.sendMessage({ oldCss: oldCss.slice(same), newCss: newCss.slice(same) });
+    browser.runtime.sendMessage({ oldCss: oldCss.slice(same), newCss: newCss.slice(same) });
     oldCss = newCss;
   }
 }
 
-chrome.storage.sync.onChanged.addListener(changes => {
+browser.storage.sync.onChanged.addListener(changes => {
   if (keys.some(key => key in changes)) {
     apply();
   }

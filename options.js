@@ -32,18 +32,18 @@ function entryNames(value) {
 }
 
 async function mutate(key, fn) {
-  const saved = await chrome.storage.sync.get(key);
+  const saved = await browser.storage.sync.get(key);
   const list = fn(saved[key] ?? []);
 
   if (list.length === 0) {
-    chrome.storage.sync.remove(key);
+    browser.storage.sync.remove(key);
   } else {
-    chrome.storage.sync.set({ [key]: list });
+    browser.storage.sync.set({ [key]: list });
   }
 }
 
 async function render() {
-  const saved = await chrome.storage.sync.get(null);
+  const saved = await browser.storage.sync.get(null);
   const rows = Object.entries(saved)
     .flatMap(([key, value]) => value.map(([name, css]) => [key, name, css]))
     .sort(([, a], [, b]) => a.localeCompare(b));
@@ -59,7 +59,7 @@ async function render() {
 
     editor.value = css;
     editor.spellcheck = false;
-    editor.placeholder = chrome.i18n.getMessage("css_placeholder");
+    editor.placeholder = browser.i18n.getMessage("css_placeholder");
     editor.addEventListener("input", () =>
       mutate(key, list => list.map(item => item[0] === name ? [name, editor.value] : item)));
 
@@ -69,14 +69,14 @@ async function render() {
   }));
 }
 
-document.title = chrome.i18n.getMessage("extension_name");
+document.title = browser.i18n.getMessage("extension_name");
 
 pattern.addEventListener("input", () => {
   try {
     shortToURLPattern(pattern.value);
     pattern.setCustomValidity("");
   } catch {
-    pattern.setCustomValidity(chrome.i18n.getMessage("invalid_pattern"));
+    pattern.setCustomValidity(browser.i18n.getMessage("invalid_pattern"));
   }
 });
 
@@ -95,7 +95,7 @@ document.getElementById("add").addEventListener("submit", event => {
   mutate(key, list => list.some(item => item[0] === name) ? list : [...list, [name, ""]]);
 });
 
-chrome.storage.sync.onChanged.addListener(changes => {
+browser.storage.sync.onChanged.addListener(changes => {
   if (Object.values(changes).some(change => entryNames(change.oldValue) !== entryNames(change.newValue))) {
     render();
   }

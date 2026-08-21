@@ -3,7 +3,7 @@
     "message": "Site CSS"
   },
   "extension_description": {
-    "message": "Inject CSS on a per-site basis"
+    "message": "Inject CSS per URL"
   },
   "css_placeholder": {
     "message": "/* your CSS here */"
